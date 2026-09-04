@@ -1,0 +1,6 @@
+{
+  "invalidEmail": "not-an-email",
+  "minimumBookingQuantity": 1,
+  "zeroBookingQuantity": 0,
+  "healthStatus": "ok"
+}

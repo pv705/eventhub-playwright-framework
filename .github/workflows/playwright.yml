@@ -1,0 +1,94 @@
+name: EventHub automation
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  quality:
+    name: Type-check and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+
+  smoke:
+    name: Smoke tests
+    if: github.event_name != 'schedule'
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE_URL: ${{ vars.BASE_URL }}
+      API_URL: ${{ vars.API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate CI configuration
+        env:
+          REQUIRED_BASE_URL: ${{ vars.BASE_URL }}
+          REQUIRED_API_URL: ${{ vars.API_URL }}
+        run: |
+          test -n "$REQUIRED_BASE_URL" || { echo "Missing GitHub variable BASE_URL"; exit 1; }
+          test -n "$REQUIRED_API_URL" || { echo "Missing GitHub variable API_URL"; exit 1; }
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:smoke
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eventhub-smoke-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  regression:
+    name: Regression tests
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      BASE_URL: ${{ vars.BASE_URL }}
+      API_URL: ${{ vars.API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate CI configuration
+        env:
+          REQUIRED_BASE_URL: ${{ vars.BASE_URL }}
+          REQUIRED_API_URL: ${{ vars.API_URL }}
+        run: |
+          test -n "$REQUIRED_BASE_URL" || { echo "Missing GitHub variable BASE_URL"; exit 1; }
+          test -n "$REQUIRED_API_URL" || { echo "Missing GitHub variable API_URL"; exit 1; }
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:regression
+      - name: Upload regression report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eventhub-regression-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
