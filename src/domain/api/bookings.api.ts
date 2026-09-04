@@ -5,7 +5,20 @@ export class BookingsApi extends BaseApi {
   list(): Promise<BookingRecord[]> {
     return this.call<unknown>('GET', '/bookings').then((payload) => {
       const candidate = typeof payload === 'object' && payload !== null && 'data' in payload ? payload.data : payload;
-      if (Array.isArray(candidate)) return candidate as BookingRecord[];
+      if (Array.isArray(candidate)) {
+        return candidate.map((booking) => {
+          if (typeof booking !== 'object' || booking === null || !('id' in booking)) {
+            throw new Error('GET /bookings returned a booking without an id.');
+          }
+
+          const record = booking as BookingRecord & { eventId?: string | number };
+          return {
+            ...record,
+            id: String(record.id),
+            ...(record.eventId === undefined ? {} : { eventId: String(record.eventId) }),
+          };
+        });
+      }
       throw new Error('GET /bookings returned an unsupported response shape.');
     });
   }

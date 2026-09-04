@@ -29,4 +29,22 @@ test.describe('Bookings API', () => {
       if (secondBooking) await authenticatedApi.bookings.delete(secondBooking.id);
     }
   });
+
+  test('returns a newly created booking in the authenticated booking list @regression', async ({ authenticatedApi, ownedEvent }) => {
+    const input = bookingInput(ownedEvent.id, `listed-${ownedEvent.id}`, 2);
+    const booking = await authenticatedApi.bookings.create(input);
+
+    try {
+      const bookings = await authenticatedApi.bookings.list();
+      const listedBooking = bookings.find((item) => item.id === booking.id);
+
+      expect(listedBooking).toMatchObject({
+        id: booking.id,
+        eventId: ownedEvent.id,
+        customerEmail: input.customerEmail,
+      });
+    } finally {
+      await authenticatedApi.bookings.delete(booking.id);
+    }
+  });
 });
