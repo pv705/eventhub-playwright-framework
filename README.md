@@ -2,6 +2,10 @@
 
 Production-style Playwright + TypeScript coverage for EventHub using API-driven setup and Page Objects for UI behavior.
 
+## Agent context
+
+Agents should start with [AGENTS.md](AGENTS.md), then use the framework, application, and data maps in `docs/` before exploring the live application. These maps reduce repeated discovery while preserving live inspection for undocumented flows and contract changes.
+
 ## Structure
 
 ```text
@@ -15,6 +19,10 @@ src/
 tests/
   api/                  API contract and business-flow tests
   ui/                   UI behavior tests
+docs/
+  framework-map.md      Source ownership, fixtures, commands, and agent workflow
+  application-map.md    Known routes, API surface, and locator contracts
+  test-data-and-auth.md Isolation, cleanup, authentication, and synchronization
 ```
 
 ## Local setup

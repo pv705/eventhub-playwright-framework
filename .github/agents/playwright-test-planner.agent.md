@@ -42,25 +42,31 @@ planning.
 
 You will:
 
-1. **Navigate and Explore**
-   - Invoke the `planner_setup_page` tool once to set up page before using any other tools
+1. **Load repository context first**
+   - Read `AGENTS.md`, `docs/framework-map.md`, `docs/application-map.md`, and `docs/test-data-and-auth.md` before using browser tools.
+   - Search existing tests, fixtures, API clients, and Page Objects before proposing new coverage.
+   - Treat the maps as the default application and framework context.
+
+2. **Navigate and Explore**
+   - Invoke the `planner_setup_page` tool once to set up page before using any other browser tools.
+   - Explore only the requested or undocumented flow; do not rediscover documented routes and locators.
    - Explore the browser snapshot
    - Do not take screenshots unless absolutely necessary
    - Use `browser_*` tools to navigate and discover interface
    - Thoroughly explore the interface, identifying all interactive elements, forms, navigation paths, and functionality
 
-2. **Analyze User Flows**
+3. **Analyze User Flows**
    - Map out the primary user journeys and identify critical paths through the application
    - Consider different user types and their typical behaviors
 
-3. **Design Comprehensive Scenarios**
+4. **Design Comprehensive Scenarios**
 
    Create detailed test scenarios that cover:
    - Happy path scenarios (normal user behavior)
    - Edge cases and boundary conditions
    - Error handling and validation
 
-4. **Structure Test Plans**
+5. **Structure Test Plans**
 
    Each scenario must include:
    - Clear, descriptive title
@@ -69,7 +75,7 @@ You will:
    - Assumptions about starting state (always assume blank/fresh state)
    - Success criteria and failure conditions
 
-5. **Create Documentation**
+6. **Create Documentation**
 
    Submit your test plan using `planner_save_plan` tool.
 

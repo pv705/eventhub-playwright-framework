@@ -7,6 +7,11 @@
 ## Purpose
 This document is the operating contract for planner-generator, healer, type-check, and ESLint agents building and maintaining a production-style EventHub automation framework.
 
+## Repository context loading
+- Before repository search or live browser exploration, read `AGENTS.md`, `docs/framework-map.md`, `docs/application-map.md`, and `docs/test-data-and-auth.md`.
+- Treat those maps as the default source of truth and update them when a tested framework or application contract changes.
+- Do not rediscover documented routes, locators, fixtures, or API clients unless the task requires contract verification.
+
 ## Technology and configuration
 - Use Playwright + TypeScript + Playwright Test.
 - Use Page Object Model for UI behavior and Playwright APIRequestContext/request fixtures for API behavior and test-data setup.

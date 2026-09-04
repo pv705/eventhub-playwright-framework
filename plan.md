@@ -4,6 +4,12 @@
 
 Create a maintainable skills.md that instructs planner, healer, type-check, and ESLint agents for a production-style Playwright + TypeScript + Playwright Test framework targeting EventHub. The framework will combine UI Page Object Model coverage with API fixtures, unique per-test data, JSON static data, environment-driven secrets and URLs, deterministic synchronization, authentication-expiry recovery, parallel-safe execution, business-critical smoke/regression categorization, GitHub Actions CI, concise artifacts, and bounded retry behavior. No repository implementation is started until the user explicitly approves implementation.
 
+## Current progress
+
+- Added a repository-level agent context pack with mandatory `AGENTS.md`, framework ownership map, application route/API/locator map, and test-data/authentication map.
+- Updated planner, generator, and healer instructions to read the context pack before repository search or live exploration.
+- Updated README documentation so future agents and maintainers can find the maps quickly.
+
 ## Test Scenarios
 
 ### 1. Framework foundation and guardrails
