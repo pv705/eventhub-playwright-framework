@@ -13,6 +13,7 @@
 - GitHub Actions configuration was verified for environment variables, quality gates, smoke/regression commands, and artifact uploads. Remote workflow execution still requires repository variables/secrets.
 - CI now validates required GitHub variables/secrets without printing values, and Copilot setup runs the repository's real type-check and lint commands instead of a nonexistent build command.
 - Confirmed target repository is `pv705/eventhub-e2e`; CI was reduced to the two required non-secret variables because all current tests generate unique users at runtime.
+- Regression matrix now covers invalid credentials and registration, unauthorized and missing event access, non-positive and over-capacity quantities, and repeated booking submissions according to the live API behavior.
 
 ## Application Overview
 
