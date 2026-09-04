@@ -25,10 +25,13 @@ jobs:
 
   smoke:
     name: Smoke tests
-    if: github.event_name != 'schedule'
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: eventhub-shared-environment
+      cancel-in-progress: false
     env:
       BASE_URL: ${{ vars.BASE_URL }}
       API_URL: ${{ vars.API_URL }}
@@ -59,11 +62,14 @@ jobs:
           retention-days: 14
 
   regression:
-    name: Regression tests
+    name: Regression or full-suite tests
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    concurrency:
+      group: eventhub-shared-environment
+      cancel-in-progress: false
     env:
       BASE_URL: ${{ vars.BASE_URL }}
       API_URL: ${{ vars.API_URL }}
@@ -82,7 +88,12 @@ jobs:
           test -n "$REQUIRED_BASE_URL" || { echo "Missing GitHub variable BASE_URL"; exit 1; }
           test -n "$REQUIRED_API_URL" || { echo "Missing GitHub variable API_URL"; exit 1; }
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:regression
+      - name: Run scheduled regression tests
+        if: github.event_name == 'schedule'
+        run: npm run test:regression
+      - name: Run the complete manual suite
+        if: github.event_name == 'workflow_dispatch'
+        run: npm test
       - name: Upload regression report
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
+/** Encapsulates registration form controls and submission behavior. */
 export class RegisterPage {
   private readonly email;
   private readonly password;
@@ -19,9 +20,33 @@ export class RegisterPage {
   }
 
   async register(email: string, password: string): Promise<void> {
+    await this.fillForm(email, password, password);
+    // Synchronize on the registration response before asserting the destination.
+    const responsePromise = this.page.waitForResponse((response) => response.url().includes('/auth/register'));
+    await this.createAccount.click();
+    const response = await responsePromise;
+    if (!response.ok()) {
+      throw new Error(`UI registration failed with ${response.status()}: ${await response.text()}`);
+    }
+  }
+
+  async expectRegistrationSucceeded(): Promise<void> {
+    await expect(this.page).toHaveURL((url) => url.pathname === '/');
+  }
+
+  async submitForValidation(email: string, password: string, confirmation: string): Promise<void> {
+    await this.fillForm(email, password, confirmation);
+    await this.createAccount.click();
+  }
+
+  async expectValidationError(message: string): Promise<void> {
+    await expect(this.page).toHaveURL((url) => url.pathname === '/register');
+    await expect(this.page.getByText(message, { exact: true })).toBeVisible();
+  }
+
+  private async fillForm(email: string, password: string, confirmation: string): Promise<void> {
     await this.email.fill(email);
     await this.password.fill(password);
-    await this.confirmation.fill(password);
-    await this.createAccount.click();
+    await this.confirmation.fill(confirmation);
   }
 }

@@ -15,6 +15,8 @@ Use API setup unless the UI setup itself is under test. Do not add shared accoun
 
 `ownedEvent` removes bookings associated with the owned event and then deletes the event after a successful test. Failed-test data is retained for diagnosis according to the fixture policy. Cleanup must stay scoped to resources created by the current test.
 
+When a test using `ownedEvent` fails, its non-secret event ID and title are attached as `owned-event.json` so retained state can be identified without logging credentials or tokens.
+
 When a test creates an additional resource outside a fixture, clean it in a `finally` block and preserve the original assertion failure.
 
 ## Authentication

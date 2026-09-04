@@ -5,7 +5,7 @@
 # EventHub Production Automation Skills
 
 ## Purpose
-This document is the operating contract for planner-generator, healer, type-check, and ESLint agents building and maintaining a production-style EventHub automation framework.
+This document is the operating contract for planner-generator, coverage, healer, type-check, and ESLint agents building and maintaining a production-style EventHub automation framework.
 
 ## Repository context loading
 - Before repository search or live browser exploration, read `AGENTS.md`, `docs/framework-map.md`, `docs/application-map.md`, and `docs/test-data-and-auth.md`.
@@ -62,16 +62,27 @@ Use this order: accessible role and name; associated label; stable placeholder o
 6. The suite retry limit is exactly two. Capture screenshot and failure artifacts on the first retry and preserve final-failure artifacts. Never add hidden retries in helpers.
 7. Preserve evidence and surface unresolved root causes. Never silently return defaults, suppress exceptions broadly, or make unrelated data mutations.
 
+## Coverage agent rules
+1. Audit functional and business-risk coverage against the repository maps, existing tests, and asserted outcomes. Do not equate a client method, Page Object, fixture, or test title with coverage.
+2. Classify evidence as covered, partially covered, not covered, duplicate, out of scope, or cannot determine. Cite repository paths and test names for existing coverage claims.
+3. Review critical paths, validation and boundaries, authentication and authorization, expiry, missing resources, conflicts, persistence, cancellation, cleanup, and parallel-safe data ownership where relevant to the requested scope.
+4. Identify duplication only when tests assert the same risk through the same surface. API setup used by a UI scenario is not duplicate coverage.
+5. Prioritize gaps as P0 critical-path gaps, P1 important business or security gaps, and P2 lower-risk or defense-in-depth gaps.
+6. Recommend the smallest appropriate API or UI test, smoke or regression tag, reusable fixtures/builders/Page Objects, and target file. Search before proposing a new helper.
+7. Remain read-only by default. Write a coverage report only when requested; do not implement tests, change tags or assertions, skip tests, or diagnose failures that belong to the healer.
+8. Do not invent coverage percentages. Use a percentage only when the report explicitly defines its denominator and counting method.
+
 ## Quality agents
 - **Planner agent:** model business flows, choose smoke/regression scope, ensure independent data, readable steps, BVA/edge coverage, and efficient UI/API boundaries.
+- **Coverage agent:** map asserted behavior to documented risks, identify missing or duplicate scenarios, and produce prioritized implementation-ready recommendations without changing tests.
 - **Healer agent:** diagnose evidence-led failures, make surgical safe fixes, respect retry/idempotency rules, and preserve failure state.
 - **Type-check agent:** validate TypeScript, fixture generics, API models, configuration, and strict null/error handling without weakening types.
 - **ESLint agent:** enforce repository lint rules, detect unsafe/brittle patterns and unused code, and avoid broad disables or unrelated rewrites.
 
 ## CI/CD and artifacts
-- GitHub Actions stages: install with lockfile, type-check, ESLint, PR `@smoke`, then scheduled/manual `@regression`.
+- GitHub Actions stages: install with lockfile, type-check, ESLint, PR/push `@smoke`, scheduled `@regression`, and manual full suite.
 - Keep secrets in GitHub configuration; never print them. Cache dependencies using the package-manager lockfile.
-- Run workers in parallel only when fixtures guarantee isolation.
+- Run workers in parallel only when fixtures guarantee isolation. Cap the shared EventHub environment at two aggregate test workers and serialize remote-test jobs to avoid verified mutation socket drops.
 - Store artifacts at `test-results/<project>/<test>/<retry>/` with concise trace, screenshot, video, console, and relevant request/response evidence. Upload the Playwright HTML report as a CI artifact. Retain artifacts for first retry and final failure; avoid noisy success artifacts.
 - Name projects, tests, and artifacts consistently so a failed business flow is identifiable without opening source code.
 
@@ -115,3 +126,15 @@ No hardcoded waits, credentials, URLs, IDs, tokens, or environment assumptions. 
 **Steps:**
   1. Apply the quality-agent ownership model and GitHub Actions/artifact policy.
     - expect: Type-check, ESLint, smoke, and regression responsibilities remain separate and CI output is concise, discoverable, and production maintainable.
+
+### 4. Coverage auditor responsibilities
+
+**Seed:** `tests/seed.spec.ts`
+
+#### 4.1. Audit business-risk coverage without changing tests
+
+**File:** `tests/skills/coverage-auditor.md`
+
+**Steps:**
+  1. Map documented capabilities and risks to existing API and UI assertions, classify evidence, identify duplication, and prioritize missing scenarios.
+    - expect: The report cites test evidence, avoids unsupported percentages, recommends the smallest appropriate layer and tag, and leaves implementation to the planner/generator workflow.

@@ -4,7 +4,8 @@
 
 - Playwright Test with TypeScript and ESM.
 - Chromium is the configured browser project.
-- Tests run fully parallel with two Playwright retries.
+- Tests remain fully parallel within a two-worker cap and use two Playwright retries.
+- The two-worker cap protects the shared remote API from verified socket drops under higher mutation concurrency.
 - Screenshots are captured on failure; trace and video are captured on the first retry.
 
 ## Source ownership
@@ -23,6 +24,7 @@
 | API tests | `tests/api/` | Fast contracts and business rules |
 | UI tests | `tests/ui/` | Critical user-visible behavior |
 | Static values | `src/data/static.json` | Non-secret stable data only |
+| Coverage auditing | `.github/agents/playwright-test-coverage.agent.md` | Evidence-led coverage matrices, prioritized gaps, and duplication review |
 
 ## Existing fixture capabilities
 
@@ -32,6 +34,13 @@
 - `ownedEvent`: creates an isolated event and cleans its bookings and event after successful tests.
 - `authenticatedPage`: logs in through the UI and waits for navigation.
 - `authenticatedCredentials`: exposes the current test user's credentials.
+
+## Current functional coverage
+
+- 44 independent tests: 9 `@smoke` and 35 `@regression`.
+- Authentication covers API registration/login/current identity plus UI success and validation paths.
+- Events cover create/list/read/update/delete, validation, authentication, ownership, and owned UI discovery/navigation.
+- Bookings cover lifecycle, inventory, validation, authentication, ownership, reads by ID/reference, UI form constraints, My Bookings, and cancellation.
 
 ## Test selection
 
@@ -51,3 +60,5 @@ Tag only business-critical fast paths as `@smoke`. Use `@regression` for boundar
 4. Add or change the smallest appropriate layer.
 5. Run targeted checks, then the full suite when shared code changed.
 6. Update maps when a tested contract or ownership boundary changes.
+
+The coverage agent audits and recommends only. Test implementation belongs to the planner/generator workflow, while failure diagnosis belongs to the healer.

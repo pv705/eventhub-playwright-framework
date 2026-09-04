@@ -1,5 +1,6 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Response } from '@playwright/test';
 
+/** Encapsulates login form locators and network-aware submission. */
 export class LoginPage {
   private readonly email;
   private readonly password;
@@ -17,13 +18,32 @@ export class LoginPage {
   }
 
   async signInAs(email: string, password: string): Promise<void> {
-    await this.email.fill(email);
-    await this.password.fill(password);
-    const responsePromise = this.page.waitForResponse((response) => response.url().includes('/auth/login'));
-    await this.signIn.click();
-    const response = await responsePromise;
+    const response = await this.submit(email, password);
     if (!response.ok()) {
       throw new Error(`UI login failed with ${response.status()}: ${await response.text()}`);
     }
+  }
+
+  async signInExpectingFailure(email: string, password: string): Promise<number> {
+    const response = await this.submit(email, password);
+    return response.status();
+  }
+
+  async expectInvalidCredentialsError(): Promise<void> {
+    await expect(this.page).toHaveURL((url) => url.pathname === '/login');
+    await expect(this.page.getByText('Invalid email or password', { exact: true })).toBeVisible();
+  }
+
+  async expectSignInSucceeded(): Promise<void> {
+    await expect(this.page).toHaveURL((url) => url.pathname === '/');
+  }
+
+  private async submit(email: string, password: string): Promise<Response> {
+    await this.email.fill(email);
+    await this.password.fill(password);
+    // Register the listener before clicking so a fast response cannot be missed.
+    const responsePromise = this.page.waitForResponse((response) => response.url().includes('/auth/login'));
+    await this.signIn.click();
+    return responsePromise;
   }
 }

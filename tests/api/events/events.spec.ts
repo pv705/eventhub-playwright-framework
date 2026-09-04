@@ -1,51 +1,68 @@
 import { test, expect } from '../../../src/domain/fixtures/test.js';
 import { uniqueEvent } from '../../../src/core/utils/data.js';
 
+// Exercises the authenticated event lifecycle with test-owned data.
 test.describe('Events API', () => {
-  test('creates and reads an isolated event @smoke', async ({ authenticatedApi, ownedEvent }) => {
-    const event = await authenticatedApi.events.get(ownedEvent.id);
-    expect(event.id).toBe(ownedEvent.id);
+  test('creates and persists exact event details @smoke', async ({ authenticatedApi }) => {
+    // 1. Create a unique event through the authenticated events API.
+    const input = uniqueEvent();
+    const created = await authenticatedApi.events.create(input);
+    let assertionsPassed = false;
+
+    try {
+      // 2. Verify the creation response represents the submitted event.
+      expect(created).toMatchObject({ id: expect.any(String), ...input, price: String(input.price) });
+
+      // 3. Read the event back and verify every submitted field persisted.
+      const reread = await authenticatedApi.events.get(created.id);
+      expect(reread).toMatchObject({ id: created.id, ...input, price: String(input.price) });
+      assertionsPassed = true;
+    } finally {
+      // 4. Remove only this test's event after successful verification.
+      if (assertionsPassed) await authenticatedApi.events.delete(created.id);
+    }
   });
 
-  test('updates an owned event @regression', async ({ authenticatedApi, ownedEvent }) => {
-    const updated = await authenticatedApi.events.update(ownedEvent.id, {
-      title: `${ownedEvent.title ?? 'Event'} updated`,
-      description: 'Updated by an isolated automated test.',
-      category: 'Technology',
-      venue: 'Updated automation venue',
-      city: 'Updated Test City',
-      eventDate: '2030-01-01T10:00:00.000Z',
-      price: 0,
-      totalSeats: 10,
-    });
-    expect(updated.id).toBe(ownedEvent.id);
+  test('lists the exact event owned by this test @regression', async ({ authenticatedApi, ownedEvent }) => {
+    // 1. Request the authenticated event collection.
+    const events = await authenticatedApi.events.list();
+
+    // 2. Verify the collection contains this test's isolated event.
+    expect(events).toContainEqual(expect.objectContaining({
+      id: ownedEvent.id,
+      title: ownedEvent.title,
+      totalSeats: ownedEvent.totalSeats,
+    }));
   });
 
-  test('persists updated event details when read again @regression', async ({ authenticatedApi, ownedEvent }) => {
+  test('updates and persists an owned event @regression', async ({ authenticatedApi, ownedEvent }) => {
+    // 1. Build the complete replacement required by the update endpoint.
     const updatedInput = {
       ...uniqueEvent(),
-      title: `Persisted ${ownedEvent.id}`,
+      title: `${ownedEvent.title ?? 'Event'} updated`,
+      description: 'Updated by an isolated automated test.',
+      venue: 'Updated automation venue',
+      city: 'Updated Test City',
       totalSeats: 12,
     };
 
-    await authenticatedApi.events.update(ownedEvent.id, updatedInput);
-    const reread = await authenticatedApi.events.get(ownedEvent.id);
+    // 2. Replace the event and verify the update response.
+    const updated = await authenticatedApi.events.update(ownedEvent.id, updatedInput);
+    expect(updated).toMatchObject({ id: ownedEvent.id, ...updatedInput, price: String(updatedInput.price) });
 
-    expect(reread.id).toBe(ownedEvent.id);
-    expect(reread.title).toBe(updatedInput.title);
-    expect(reread.totalSeats).toBe(updatedInput.totalSeats);
+    // 3. Read the event again and verify the changes persisted.
+    const reread = await authenticatedApi.events.get(ownedEvent.id);
+    expect(reread).toMatchObject({ id: ownedEvent.id, ...updatedInput, price: String(updatedInput.price) });
   });
 
-  test('does not expose an event after it is deleted @regression', async ({ authenticatedApi }) => {
+  test('returns not found after deleting an owned event @regression', async ({ authenticatedApi }) => {
+    // 1. Create an event whose deletion is owned by this test.
     const event = await authenticatedApi.events.create(uniqueEvent());
-    let deleted = false;
 
-    try {
-      await authenticatedApi.events.delete(event.id);
-      deleted = true;
-      await expect(authenticatedApi.events.get(event.id)).rejects.toThrow(/404|500/i);
-    } finally {
-      if (!deleted) await authenticatedApi.events.delete(event.id);
-    }
+    // 2. Delete the event through the authenticated events API without replaying the mutation.
+    await authenticatedApi.events.delete(event.id);
+
+    // 3. Verify the deleted event has the exact missing-resource status.
+    await expect(authenticatedApi.events.get(event.id)).rejects.toMatchObject({ status: 404 });
   });
 });

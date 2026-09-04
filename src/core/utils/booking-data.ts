@@ -1,5 +1,6 @@
 import type { CreateBookingInput } from '../types/domain.js';
 
+/** Builds isolated booking data while allowing each test to select its boundary quantity. */
 export function bookingInput(eventId: string, suffix: string, quantity: number): CreateBookingInput {
   return {
     eventId,

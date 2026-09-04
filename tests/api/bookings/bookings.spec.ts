@@ -1,50 +1,36 @@
 import { test, expect } from '../../../src/domain/fixtures/test.js';
 import { bookingInput } from '../../../src/core/utils/booking-data.js';
-import type { BookingRecord } from '../../../src/core/types/domain.js';
 
+// Exercises the complete booking API lifecycle with owned data.
 test.describe('Bookings API', () => {
-  test('creates and cancels an isolated booking @smoke', async ({ authenticatedApi, ownedEvent }) => {
-    const booking = await authenticatedApi.bookings.create(bookingInput(ownedEvent.id, ownedEvent.id, 1));
-    expect(booking.id).toBeTruthy();
-    await authenticatedApi.bookings.delete(booking.id);
-  });
+  test('creates, persists, and cancels an isolated booking @smoke', async ({ authenticatedApi, ownedEvent }) => {
+    const input = bookingInput(ownedEvent.id, ownedEvent.id, 2);
 
-  test('rejects a non-positive booking quantity @regression', async ({ authenticatedApi, ownedEvent }) => {
-    await expect(authenticatedApi.bookings.create(bookingInput(ownedEvent.id, `invalid-${ownedEvent.id}`, 0))).rejects.toThrow();
-  });
-
-  test('rejects a booking above the available seat boundary @regression', async ({ authenticatedApi, ownedEvent }) => {
-    await expect(authenticatedApi.bookings.create(bookingInput(ownedEvent.id, `overflow-${ownedEvent.id}`, 11))).rejects.toThrow();
-  });
-
-  test('handles a repeated booking submission for the same customer and event @regression', async ({ authenticatedApi, ownedEvent }) => {
-    const input = bookingInput(ownedEvent.id, `duplicate-${ownedEvent.id}`, 1);
-    const firstBooking = await authenticatedApi.bookings.create(input);
-    let secondBooking: BookingRecord | undefined;
-    try {
-      secondBooking = await authenticatedApi.bookings.create(input);
-      expect(secondBooking.id).not.toBe(firstBooking.id);
-    } finally {
-      await authenticatedApi.bookings.delete(firstBooking.id);
-      if (secondBooking) await authenticatedApi.bookings.delete(secondBooking.id);
+    // 1. Record the event inventory before creating the booking.
+    const eventBeforeBooking = await authenticatedApi.events.get(ownedEvent.id);
+    if (typeof eventBeforeBooking.availableSeats !== 'number') {
+      throw new Error('The event response did not include numeric availableSeats.');
     }
-  });
 
-  test('returns a newly created booking in the authenticated booking list @regression', async ({ authenticatedApi, ownedEvent }) => {
-    const input = bookingInput(ownedEvent.id, `listed-${ownedEvent.id}`, 2);
+    // 2. Create the booking and verify the complete submitted payload.
     const booking = await authenticatedApi.bookings.create(input);
+    expect(booking.id).toBeTruthy();
+    expect(booking).toEqual(expect.objectContaining({ ...input }));
 
-    try {
-      const bookings = await authenticatedApi.bookings.list();
-      const listedBooking = bookings.find((item) => item.id === booking.id);
+    // 3. Verify the exact owned booking persisted and inventory decreased.
+    const bookingsAfterCreate = await authenticatedApi.bookings.list();
+    const listedBooking = bookingsAfterCreate.find((item) => item.id === booking.id);
+    expect(listedBooking).toEqual(expect.objectContaining({ id: booking.id, ...input }));
 
-      expect(listedBooking).toMatchObject({
-        id: booking.id,
-        eventId: ownedEvent.id,
-        customerEmail: input.customerEmail,
-      });
-    } finally {
-      await authenticatedApi.bookings.delete(booking.id);
-    }
+    const eventAfterBooking = await authenticatedApi.events.get(ownedEvent.id);
+    expect(eventAfterBooking.availableSeats).toBe(eventBeforeBooking.availableSeats - input.quantity);
+
+    // 4. Cancel the booking and verify both removal and restored inventory.
+    await authenticatedApi.bookings.delete(booking.id);
+    const bookingsAfterCancellation = await authenticatedApi.bookings.list();
+    expect(bookingsAfterCancellation.some((item) => item.id === booking.id)).toBe(false);
+
+    const eventAfterCancellation = await authenticatedApi.events.get(ownedEvent.id);
+    expect(eventAfterCancellation.availableSeats).toBe(eventBeforeBooking.availableSeats);
   });
 });

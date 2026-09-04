@@ -1,6 +1,6 @@
 # EventHub automation agent contract
 
-Before searching source files or opening the live application, every planner, generator, healer, and quality agent must read:
+Before searching source files or opening the live application, every planner, generator, coverage auditor, healer, and quality agent must read:
 
 1. `docs/framework-map.md`
 2. `docs/application-map.md`
